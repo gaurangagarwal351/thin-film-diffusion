@@ -129,3 +129,75 @@ def physical_time(tau, thickness_m: float, diffusivity_m2_s: float):
     if not np.all(np.isfinite(values)) or np.any(values < 0):
         raise ValueError('tau must be finite and non-negative')
     return values * thickness_m**2 / diffusivity_m2_s
+
+
+def solve_tridiagonal(lower, diagonal, upper, rhs) -> np.ndarray:
+    """Thomas elimination for a nonsingular tridiagonal system, in O(N).
+
+    The diffusion matrices used here are strictly diagonally dominant.
+    This no-pivot algorithm is not a general substitute for a pivoted solver.
+    All input arrays are copied and remain unchanged.
+    """
+    a, b, c, d = [np.asarray(values, dtype=float).copy()
+                  for values in (lower, diagonal, upper, rhs)]
+    if (any(values.ndim != 1 for values in (a, b, c, d)) or b.size == 0
+            or d.size != b.size or a.size != b.size-1 or c.size != b.size-1
+            or any(not np.all(np.isfinite(values)) for values in (a, b, c, d))):
+        raise ValueError('incompatible or non-finite tridiagonal arrays')
+    for i in range(1, b.size):
+        if b[i-1] == 0:
+            raise ValueError('zero pivot; this solver does not pivot')
+        multiplier = a[i-1] / b[i-1]
+        b[i] -= multiplier*c[i-1]
+        d[i] -= multiplier*d[i-1]
+    if b[-1] == 0:
+        raise ValueError('zero pivot; this solver does not pivot')
+    result = np.empty_like(d)
+    result[-1] = d[-1]/b[-1]
+    for i in range(b.size-2, -1, -1):
+        result[i] = (d[i]-c[i]*result[i+1])/b[i]
+    return result
+
+
+def solve_slab_cn(times, nodes: int = 101, r: float = 1.0) -> list[Snapshot]:
+    """Crank–Nicolson solution of the same slab problem as solve_slab.
+
+    r is the largest dtau/dz**2. The scheme is linearly stable for all
+    finite positive r, but large steps can oscillate near the initial
+    boundary jump. No clipping or artificial damping is applied.
+    The comparison script measures accuracy, not just stability.
+    """
+    if isinstance(nodes, bool) or not isinstance(nodes, Integral) or nodes < 3:
+        raise ValueError('nodes must be an integer >= 3')
+    if not np.isfinite(r) or r <= 0:
+        raise ValueError('r must be finite and positive')
+    targets = np.asarray(times, dtype=float)
+    if (targets.ndim != 1 or targets.size == 0
+            or not np.all(np.isfinite(targets)) or np.any(targets < 0)
+            or np.any(np.diff(targets) <= 0)):
+        raise ValueError('times must be finite, non-negative, and strictly increasing')
+    position = np.linspace(0, 1, nodes)
+    dz = 1/(nodes-1)
+    concentration = np.zeros(nodes)
+    concentration[[0, -1]] = 1
+    tau = 0.0
+    output = []
+    for target in targets:
+        interval = float(target)-tau
+        steps = int(np.ceil(interval/(r*dz**2)))
+        if steps:
+            ratio = (interval/steps)/dz**2
+            diagonal = np.full(nodes-2, 1+ratio)
+            off_diagonal = np.full(nodes-3, -ratio/2)
+            for _ in range(steps):
+                rhs = concentration[1:-1] + ratio/2 * (
+                    concentration[:-2]-2*concentration[1:-1]+concentration[2:]
+                )
+                # The RHS already includes old boundary values; these
+                # terms account for the fixed new boundary values.
+                rhs[0] += ratio/2
+                rhs[-1] += ratio/2
+                concentration[1:-1] = solve_tridiagonal(off_diagonal, diagonal, off_diagonal, rhs)
+        tau = float(target)
+        output.append(Snapshot(tau, position.copy(), concentration.copy()))
+    return output

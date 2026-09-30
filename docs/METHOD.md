@@ -46,6 +46,14 @@ The implementation evaluates 512 odd modes. At the saved positive times the expo
 
 ## Verification and interpretation
 
+### Crank–Nicolson extension
+
+`solve_slab_cn` averages the centered spatial derivative at the old and new time levels. For interior nodes the tridiagonal matrix has diagonal 1+r and off-diagonals −r/2. The right-hand side contains (1−r) times the current node plus r/2 times each neighbour, with the new-time fixed boundary contributions added at both ends. The Thomas algorithm solves this system in linear work per step. The test suite checks it against an independently assembled dense system.
+
+Crank–Nicolson is second order in time for sufficiently smooth solutions and linearly stable without the FTCS step restriction. It can still oscillate near the initial boundary discontinuity at large r; this implementation does not clip the result. The [method comparison](../results/METHOD_COMPARISON.md) reports actual errors and step counts, rather than inferring accuracy or execution speed from stability alone. The standard method is described in [Strang's notes](https://ocw.mit.edu/courses/18-086-mathematical-methods-for-engineers-ii-spring-2006/resources/am54/); [related work](RELATED_WORK.md) records the supplied repository that prompted this extension.
+
+### Checks for the original explicit study
+
 The study compares profiles with the series and refines the grid at Fo=0.05. Because the time step scales as Δz², both the spatial error and the first-order temporal error decrease approximately as Δz². The reported convergence order is therefore for this coupled refinement, not a claim of second-order time integration.
 
 For a chosen uptake, the dimensionless crossing time is fixed. Converting it back using t=Fo L²/D shows the quadratic thickness dependence and inverse diffusivity dependence. The [results report](../results/REPORT.md) states the computed values and errors.

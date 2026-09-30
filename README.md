@@ -1,6 +1,6 @@
 # Diffusion into a thin film
 
-A Python study of how film thickness and diffusivity affect the time needed for a species to enter a film. The model solves Fick's second law in one dimension and compares finite-difference results with an analytical series.
+A Python study of how film thickness and diffusivity affect the time needed for a species to enter a film. The model solves Fick's second law in one dimension, compares explicit FTCS and Crank–Nicolson time stepping, and checks the results against an analytical series.
 
 **Computational study:** the plots and CSV files are simulated. No experimental measurements or material-specific validation are claimed.
 
@@ -10,10 +10,12 @@ A Python study of how film thickness and diffusivity affect the time needed for 
 
 - [Model and assumptions](docs/METHOD.md): geometry, boundary conditions, equations, and numerical method.
 - [Computed results](results/REPORT.md): concentration profiles, uptake, numerical error, and thickness scaling.
+- [Time-stepping comparison](results/METHOD_COMPARISON.md): FTCS and Crank–Nicolson accuracy for the same physical model.
 - [Solver](diffusion.py): finite differences, analytical solution, and unit conversion.
-- [Reproduction script](run_study.py): generates every figure, CSV file, and the results report.
-- [Verification tests](tests/test_diffusion.py): analytical agreement, physical bounds, symmetry, convergence, and scaling.
+- [Base study script](run_study.py) and [comparison script](compare_methods.py): generate the figures, CSV files, and reports.
+- [Verification tests](tests/): analytical agreement, physical bounds, symmetry, convergence, tridiagonal solving, and scaling.
 - [Code walkthrough](docs/WALKTHROUGH.md): how to understand the calculation and try a small extension.
+- [Related work](docs/RELATED_WORK.md): reviewed repositories, attribution, and the scope of the independently implemented extension.
 
 ## Run it
 
@@ -25,6 +27,7 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python run_study.py
+python compare_methods.py
 ```
 
 On Windows, use `.venv\Scripts\activate` instead of the `source` command. The tested package versions are also recorded in `requirements-lock.txt`; use it in place of `requirements.txt` to reproduce that environment. The script uses a non-interactive plotting backend, so a display is not required.
@@ -33,6 +36,7 @@ To keep a separate set of generated outputs:
 
 ```bash
 python run_study.py --output results-check
+python compare_methods.py --output results-check
 ```
 
 The study settings are explicit near the top of `main()` in `run_study.py`: output times, 201 profile nodes, the grids for convergence, and the illustrative dimensional parameters. `diffusion.py` can be imported to run other grids or output times.
