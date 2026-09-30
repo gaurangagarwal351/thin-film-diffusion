@@ -1,0 +1,35 @@
+{
+  "data_type": "simulation; no experimental observations",
+  "model": "1D constant-D slab; both surfaces held at normalized concentration 1",
+  "nodes": 201,
+  "maximum_ftcs_ratio": 0.45,
+  "profile_fourier_times": [
+    0.002,
+    0.01,
+    0.05,
+    0.2
+  ],
+  "series_terms": 512,
+  "max_profile_errors": [
+    0.0007242682799540323,
+    0.00014488608483620435,
+    2.647307999681381e-05,
+    1.583775465574533e-05
+  ],
+  "convergence_fourier_time": 0.05,
+  "observed_orders": [
+    1.973623790226595,
+    1.9990230851726587,
+    1.9978899901760037
+  ],
+  "fourier_time_to_90_percent": 0.21202135201150635,
+  "illustrative_diffusivity_m2_s": 1e-14,
+  "time_to_90_percent_seconds_by_thickness_um": {
+    "1": 21.202135201150632,
+    "2": 84.80854080460253,
+    "5": 530.0533800287658
+  },
+  "python_version": "3.14.3",
+  "numpy_version": "2.5.3",
+  "matplotlib_version": "3.11.2"
+}
